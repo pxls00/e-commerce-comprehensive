@@ -75,7 +75,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      - PGADMIN_DEFAULT_EMAIL=ltwixy@mail.com
+      - PGADMIN_DEFAULT_EMAIL=root@mail.com
       - PGADMIN_DEFAULT_PASSWORD=postgres
       - PGADMIN_LISTEN_PORT=4433
     ports:
