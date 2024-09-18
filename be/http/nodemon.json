@@ -1,0 +1,10 @@
+{
+  "ignore": [".git", "node_modules/**/*"],
+  "watch": ["src/"],
+  "ext": ".ts,.js",
+  "exec": "npx ts-node --require ./src/opentelemetry/instrumentation.ts ./src/index.ts",
+  "events": {
+    "dev": "cls || clear",
+    "serve": "cls || clear"
+  }
+}

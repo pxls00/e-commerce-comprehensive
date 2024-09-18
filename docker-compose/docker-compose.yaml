@@ -1,0 +1,93 @@
+# version: '3'
+
+services:
+  fe_main_host:
+    # image: "vue-main-host-image"
+    build: "../fe/main-host/"
+    container_name: fe_main_host
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+    networks:
+      - main
+  fe_marketplace:
+    build: "../fe/marketplace/"
+    container_name: fe_marketplace
+    environment:
+      - NUXT_PUBLIC_API_BASE_URL=http://http_be:3000/api
+      - NITRO_PORT=8081
+    restart: always
+    ports:
+      - "8081:8081"
+    networks:
+      - main
+
+  http_be:
+    # image: "http-be"
+    build: "../be/http/"
+    container_name: http_be
+    restart: always
+    ports:
+      - "3000:${PORT}"
+    environment:
+      - PORT=${PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - JWT_ACCESS_TOKEN=${JWT_ACCESS_TOKEN}
+      - JWT_REFRESH_TOKEN=${JWT_REFRESH_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - main
+  
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - "./settings/pg:/docker-entrypoint-initdb.d"
+      - "./data_local/pg:/var/lib/postgresql/data/"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      main:
+        aliases:
+          - postgres
+
+  pgadmin:
+    image: "dpage/pgadmin4"
+    container_name: pgadmin
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=ltwixy@mail.com
+      - PGADMIN_DEFAULT_PASSWORD=postgres
+      - PGADMIN_LISTEN_PORT=4433
+    ports:
+      - "4434:4433"
+    volumes:
+      - "./settings/pgadmin/servers.json:/pgadmin4/servers.json"
+    networks:
+      - main
+
+networks:
+  main:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    

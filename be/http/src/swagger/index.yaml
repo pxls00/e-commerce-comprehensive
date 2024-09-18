@@ -1,0 +1,362 @@
+openapi: 3.0.0
+servers:
+  - description: Local
+    url: http://localhost:3000
+  - description: Order Zakaz
+    url: https://tn-zakaz-dev.tages.dev
+info:
+  version: "1.0.0"
+  title: zakaz-order-handlers
+  description: ZAKAZ order Handlers
+
+security:
+  - jwt_token: []
+
+tags:
+  - name: Auth
+    description: Авторизация в локальное приложение
+  - name: Product
+    description: Продукты
+  - name: Order
+    description: Заказ
+
+paths:
+  /api/login:
+    post:
+      summary: Авторизоваться в приложение
+      tags:
+        - Auth
+      operationId: apiLogin
+      requestBody:
+        $ref: "#/components/requestBodies/ApiLogin"
+      responses:
+        "200":
+          $ref: "#/components/responses/ResponseUser"
+        '400':
+          $ref: '#/components/responses/ResponseBadParameters'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+  /api/product:
+    get:
+      summary: Список продуктов
+      tags:
+        - Product
+      operationId: apiProductList
+      responses:
+        "200":
+          $ref: "#/components/responses/ResponseProductList"
+        '400':
+          $ref: '#/components/responses/ResponseBadParameters'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+  /api/product/{uuid}:
+    get:
+      summary: Получить продукт
+      tags:
+        - Product
+      operationId: apiProductItem
+      parameters:
+        - name: uuid
+          in: path
+          description: Uuid продукта
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/ResponseProductList"
+        '400':
+          $ref: '#/components/responses/ResponseBadParameters'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+  /getOrder/{uuid}:
+    get:
+      summary: Получить детальный заказ
+      tags:
+        - Order
+      operationId: getOrder
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseDetailOrder'
+
+        '400':
+          $ref: '#/components/responses/ResponseBadParameters'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+
+components:
+  schemas:
+    Product:
+      type: object
+      title: Продукт
+      properties:
+        uuid:
+          type: string
+          title: Уникальный идентификатор продукта
+        name:
+          type: string
+          title: Название продукта
+        description:
+          type: string
+          title: Описание продукта
+        price:
+          type: integer
+          format: int64
+    UserAuth:
+      type: object
+      title: Email и пароль
+      properties:
+        email:
+          type: string
+          title: Email пользователя
+        password:
+          type: string
+          title: Пароль пользователя
+      required:
+        - email
+        - password
+      example:
+        email: "ruslan1@gmail.com"
+        password: "123456"
+    User:
+      type: object
+      title: Полный объект пользователя
+      allOf:
+        - $ref: "#/components/schemas/UserAuth"
+        - type: object
+          properties:
+            uuid:
+              type: string
+              title: Уникальный идентификатор пользователя
+            name:
+              type: string
+              title: Имя пользователя
+            surname:
+              type: string
+              title: Фамилия пользователя
+            age:
+              type: integer
+              format: int64
+              title: Возраст пользователя
+    Uuid:
+      type: object
+      title: Общий идентификатор
+      properties:
+        value:
+          type: string
+          title: Значение идентификатора
+    DateRFC3339:
+      type: object
+      title: Общий объект даты
+      properties:
+        value:
+          type: string
+          title: Значение даты в ISO
+    DeliveryPlace:
+      type: object
+      title: Место доставки
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    DeliveryPlaceWithDate:
+      type: object
+      title: Место доставки с датами отгрузки и доставки
+      properties:
+        deliveryplaceindex:
+          type: integer
+          format: int64
+        deliverydatestart:
+          $ref: '#/components/schemas/DateRFC3339'
+        # ...
+        deliveryplace:
+          $ref: '#/components/schemas/DeliveryPlace'
+    DetailOrder:
+      type: object
+      title: Детальный вид заказа
+      properties:
+        uuid:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: integer
+          format: int64
+          enum:
+            - 0
+            - 1
+            - 2
+            # - ...
+            - 18
+        counterpartyekk:
+          type: integer
+          format: int64
+        counterpartybranchekk:
+          type: integer
+          format: int64
+        deliverytype:
+          type: integer
+          format: int64
+          enum:
+            - 0
+            - 1
+            - 2
+        transportkind:
+          type: integer
+          format: int64
+          enum:
+            - 0
+            - 1
+        #...
+        userdate:
+          $ref: '#/components/schemas/DateRFC3339'
+        deliveryplacesList:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryPlaceWithDate'
+
+    CommonError:
+      type: object
+      title: Общая ошибка
+      properties:
+        message:
+          type: string
+          title: Сообщение ошибки
+      required:
+        - message
+  requestBodies:
+    ApiLogin:
+      description: Объект авторизации пользователя
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/UserAuth"
+    GetOrderRequest:
+      description: Объект запроса для получения детального вида заказа
+      content:
+        'application/grpc-web-text+proto':
+          schema:
+            type: object
+            title: Запрос
+            properties:
+              request:
+                type: object
+                title: Объект запроса
+                properties:
+                  uuid:
+                    $ref: '#/components/schemas/Uuid'
+  responses:
+    ResponseBadParameters:
+      description: Заданы неверные параметры
+      content:
+        application/json:
+          schema:
+            type: object
+            title: Объект ошибки
+            properties:
+              message:
+                type: string
+                title: Сообщение ошибки
+              errorSchema:
+                type: array
+                title: Ошибки в запросе
+                description: Массив имен ошибочно заполненных полей
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      pattern: '[a-zA-Z0-9_\[\]]+'
+                      title: Название поля
+                    errorMessage:
+                      type: string
+                      title: Текст ошибки для данного поля
+            required:
+              - message
+    ResponseNotFound:
+      description: Объект не найден
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CommonError"
+    ResponseDetailOrder:
+      description: Ответ - Детальный вид заказа
+      content:
+        'application/grpc-web-text+proto':
+          schema:
+            $ref: '#/components/schemas/DetailOrder'
+    ResponseUser:
+      description: Ответ - Получение пользователя
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/User"
+    ResponseProductList:
+      description: Ответ - список продуктов
+      content:
+        "application/json":
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Product"
+    ResponseProductItem:
+      description: Ответ - 1 продукт
+      content:
+        "application/json":
+          schema:
+            $ref: "#/components/schemas/Product"
+  securitySchemes:
+    jwt_token:
+      type: http
+      description: Токен для авторизации
+      scheme: bearer
+      bearerFormat: JWT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
