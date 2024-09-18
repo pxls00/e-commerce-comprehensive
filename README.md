@@ -20,7 +20,7 @@ App requires:
 
 
 1. Ensure Docker is running on your system.
-2. Open a terminal and navigate to the ``root/app-deploy`` directory.
+2. Open a terminal and navigate to the ``root/docker-compose`` directory.
 3. Run the following command to build the Docker images:
 
 ```bash
